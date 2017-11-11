@@ -1,4 +1,4 @@
-package pl.edu.uj.prir.space_station;
+package pl.edu.uj.prir.space.station;
 
 import java.util.List;
 
