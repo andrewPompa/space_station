@@ -1,5 +1,6 @@
 package pl.edu.uj.prir.space.station.transfer.chain;
 
+import pl.edu.uj.prir.space.station.MoonBaseAirlock;
 import pl.edu.uj.prir.space.station.transfer.chain.commands.*;
 
 /**
@@ -9,6 +10,25 @@ import pl.edu.uj.prir.space.station.transfer.chain.commands.*;
  */
 public final class ChainCommandBuilder {
     private ChainCommandBuilder() {
+    }
+
+    public static Chain buildMoveCargoOutsideChain (MoonBaseAirlock moonBaseAirlock) {
+       return Chain.begin(moonBaseAirlock)
+                .next(ChainCommandBuilder.buildInternalDoorsOpenCommand())
+                .next(ChainCommandBuilder.buildInsertCargoCommand())
+                .next(ChainCommandBuilder.buildInternalDoorsCloseCommand())
+                .next(ChainCommandBuilder.buildExternalDoorsOpenCommand())
+                .next(ChainCommandBuilder.buildExternalDoorsCloseCommand())
+                .next(ChainCommandBuilder.buildEjectCargoCommand());
+    }
+    public static Chain buildMoveCargoInsideChain (MoonBaseAirlock moonBaseAirlock) {
+        return Chain.begin(moonBaseAirlock)
+                .next(ChainCommandBuilder.buildExternalDoorsOpenCommand())
+                .next(ChainCommandBuilder.buildInsertCargoCommand())
+                .next(ChainCommandBuilder.buildExternalDoorsCloseCommand())
+                .next(ChainCommandBuilder.buildInternalDoorsOpenCommand())
+                .next(ChainCommandBuilder.buildInternalDoorsCloseCommand())
+                .next(ChainCommandBuilder.buildEjectCargoCommand());
     }
 
     public static AirlockCommand buildInsertCargoCommand() {

@@ -16,32 +16,12 @@ public class MoonBaseAirlock extends Observable {
     private final int id;
     private final AirlockInterface airlock;
     private MoonBaseAirlockState state;
-    private final Chain moveCargoOutsideChain;
-    private final Chain moveCargoInsideChain;
     private Chain chain;
     private CargoOrder cargoOrder;
 
     public MoonBaseAirlock(int id, AirlockInterface airlock) {
         this.id = id;
         this.airlock = airlock;
-
-
-        moveCargoOutsideChain = Chain.begin(this)
-                .next(ChainCommandBuilder.buildInternalDoorsOpenCommand())
-                .next(ChainCommandBuilder.buildInsertCargoCommand())
-                .next(ChainCommandBuilder.buildInternalDoorsCloseCommand())
-                .next(ChainCommandBuilder.buildExternalDoorsOpenCommand())
-                .next(ChainCommandBuilder.buildExternalDoorsCloseCommand())
-                .next(ChainCommandBuilder.buildEjectCargoCommand());
-
-        moveCargoInsideChain = Chain.begin(this)
-                .next(ChainCommandBuilder.buildExternalDoorsOpenCommand())
-                .next(ChainCommandBuilder.buildInsertCargoCommand())
-                .next(ChainCommandBuilder.buildExternalDoorsCloseCommand())
-                .next(ChainCommandBuilder.buildInternalDoorsOpenCommand())
-                .next(ChainCommandBuilder.buildInternalDoorsCloseCommand())
-                .next(ChainCommandBuilder.buildEjectCargoCommand());
-
         listenForAirLockChanges(airlock);
     }
 
@@ -51,14 +31,29 @@ public class MoonBaseAirlock extends Observable {
 
     public boolean canTakeCargo(CargoOrder cargo) {
 //        todo: implement when can I take cargo :)
-        return false;
-//        return cargo.getSize() <= airlock.getSize();
+        if (cargo.getSize() > airlock.getSize()) {
+            return false;
+        }
+        if (cargo.getSize() < airlock.getSize() && cargoOrder == null) {
+            return true;
+        }
+        if (cargoOrder.getSize() == airlock.getSize()) {
+            return false;
+        }
+        if (state == MoonBaseAirlockState.FULL) {
+            return false;
+        }
+        return true;
+//        TODO: zaimpelementować stany
     }
 
     public void transferCargo(CargoOrder cargoOrder) {
-        chain = findAppropriateCargoChain(cargoOrder);
+        chain = prepareCargoTransferChain(cargoOrder);
         this.cargoOrder = cargoOrder;
-        makeTransferCargoStep(null);
+//        prepareAirlockToCargoTransfer();
+    }
+
+    private void prepareAirlockToCargoTransfer() {
 
     }
 
@@ -96,15 +91,37 @@ public class MoonBaseAirlock extends Observable {
         return (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN) ? 1 : -1;
     }
 
-    private Chain findAppropriateCargoChain(CargoOrder cargoOrder) {
-        return (cargoOrder.fromInside()) ? moveCargoOutsideChain : moveCargoInsideChain;
+    private Chain prepareCargoTransferChain(CargoOrder cargoOrder) {
+        final Chain transferChain = (cargoOrder.fromInside()) ?
+                ChainCommandBuilder.buildMoveCargoOutsideChain(this) :
+                ChainCommandBuilder.buildMoveCargoInsideChain(this);
+
+        if (state == MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED && cargoOrder.fromInside()) {
+            transferChain.first(ChainCommandBuilder.buildExternalDoorsCloseCommand());
+        } else if (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN && !cargoOrder.fromInside()) {
+            transferChain.first(ChainCommandBuilder.buildInternalDoorsCloseCommand());
+        }
+        return transferChain;
     }
 
     private void makeTransferCargoStep(AirlockInterface.Event event) {
-        if (!chain.execute()) {
+        final boolean isChainFinished = chain.execute();
+        if (!isChainFinished) {
             logger.info("Processing finished");
+            chain = null;
+            cargoOrder = null;
+            setCurrentEvent(event);
             notifyObservers();
         }
+    }
+
+    private void setCurrentEvent(AirlockInterface.Event event) {
+        if (event == AirlockInterface.Event.INTERNAL_AIRTIGHT_DOORS_CLOSED) {
+            state = MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED;
+        } else if (event == AirlockInterface.Event.INTERNAL_AIRTIGHT_DOORS_OPENED) {
+            state = MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED;
+        }
+        state = MoonBaseAirlockState.EMPTY_ALL_CLOSED;
     }
 
     private void listenForAirLockChanges(AirlockInterface airlock) {

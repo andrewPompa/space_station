@@ -8,5 +8,6 @@ package pl.edu.uj.prir.space.station;
 public enum MoonBaseAirlockState {
     EMPTY_ALL_CLOSED,
     EMPTY_INTERNAL_OPEN,
-    EMPTY_INTERNAL_CLOSED;
+    EMPTY_INTERNAL_CLOSED,
+    FULL
 }
