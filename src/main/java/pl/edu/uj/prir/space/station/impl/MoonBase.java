@@ -38,7 +38,7 @@ public class MoonBase implements MoonBaseInterface, Observer {
                 new Object[]{cargo.getSize(), cargoOrderQueue.size()});
         final CargoOrder cargoOrder = new CargoOrder(cargo, direction);
         cargoOrderQueue.add(cargoOrder);
-        serverCargoOrders();
+        serveCargoOrders();
     }
 
     @Override
@@ -47,11 +47,11 @@ public class MoonBase implements MoonBaseInterface, Observer {
         logger.log(Level.INFO,
                 "moonBaseAirLock({0}) is empty checking to register cargo",
                 moonBaseAirlock.getId());
-        serverCargoOrders();
+        serveCargoOrders();
 
     }
 
-    private void serverCargoOrders() {
+    private void serveCargoOrders() {
         cargoOrderQueue.forEach(cargoOrder -> {
             final Optional<MoonBaseAirlock> moonBaseAirlockOptional = getMoonBaseAirLockToTransferCargo(cargoOrder);
             if (!moonBaseAirlockOptional.isPresent()) {
