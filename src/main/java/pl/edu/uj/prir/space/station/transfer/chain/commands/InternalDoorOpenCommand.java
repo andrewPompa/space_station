@@ -8,10 +8,11 @@ import pl.edu.uj.prir.space.station.transfer.chain.AirlockCommand;
  *
  * @author michal jazowski on 11.11.17.
  */
-public class InternalDoorOpenCommand implements AirlockCommand {
+public class InternalDoorOpenCommand extends AirlockCommand {
 
     @Override
     public void execute(final MoonBaseAirlock moonBaseAirlock) {
+        logExecutionCommand(moonBaseAirlock, "openInternalDoors");
         moonBaseAirlock.openInternalDoors();
     }
 }
