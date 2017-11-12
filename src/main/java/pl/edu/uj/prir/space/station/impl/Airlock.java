@@ -21,7 +21,6 @@ public class Airlock implements AirlockInterface {
     private static final Executor executors = Executors.newCachedThreadPool();
     private final List<EventsListenerInterface> eventsListenerList;
     private final int size;
-    private CargoInterface cargo;
 
     public Airlock(int size) {
         this.size = size;
