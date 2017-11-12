@@ -2,9 +2,11 @@ package pl.edu.uj.prir.space.station;
 
 import pl.edu.uj.prir.space.station.transfer.chain.Chain;
 import pl.edu.uj.prir.space.station.transfer.chain.ChainCommandBuilder;
+import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.Observable;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -33,19 +35,48 @@ public class MoonBaseAirlock extends Observable {
     }
 
     public boolean canTakeCargo(CargoOrder cargo) {
+//        jeżeli ładunek jest większy niż rozmiar śluzy
         if (cargo.getSize() > airlock.getSize()) {
             return false;
         }
-        if (cargo.getSize() < airlock.getSize() && isCargoSet()) {
-            return true;
+//        jeżeli ładunek jest mniejszy niż rozmiar śluzy
+        if (cargo.getSize() < airlock.getSize()) {
+//            jeżel ładunek nie jest obsługiwany to mogę brać
+            return cargoOrder == null;
         }
+//        teraz mogę miec ładunek który ma taki sam rozmiar jak śluza
+
+//        jeżeli mam już ładunek w śluzie o takim samym rozmiarze to nie chcę kolejnego
         if (cargoOrder.getSize() == airlock.getSize()) {
             return false;
         }
-        if (isCargoSet()) {
-            return false;
+//        ładunku w śluzie nie ma lub jest miniejszy niż rozmiar śluzy
+
+//        jeżeli ładunku jeszcze nie ma śluzie to teoretycznie mogę go obsłużyć
+        return canRejectSmallerCargoThanAirlockSize();
+    }
+    public boolean isTransferringSmallerCargoThanAirlockSize() {
+       return cargoOrder.getSize() < airlock.getSize();
+    }
+    public boolean canRejectSmallerCargoThanAirlockSize() {
+        stateLock.readLock().lock();
+        try {
+            return !isCargoInside();
+        } finally {
+            stateLock.readLock().unlock();
         }
-        return true;
+    }
+
+    public CargoOrder rejectSmallerCargo() {
+        if (cargoOrder == null) {
+            throw new InvalidStateException("No cargo to transfer!");
+        }
+        logger.log(Level.INFO, "Cargo rejected from transferring: {0}", cargoOrder.toString());
+
+        final CargoOrder rejectedOrder = new CargoOrder(cargoOrder);
+        chain = null;
+        cargoOrder = null;
+        return rejectedOrder;
     }
 
     public void transferCargo(CargoOrder cargoOrder) {
@@ -150,17 +181,13 @@ public class MoonBaseAirlock extends Observable {
         }
     }
 
-    private boolean isCargoSet() {
-        stateLock.readLock().lock();
-        try {
+    private boolean isCargoInside() {
+        return state == MoonBaseAirlockState.FULL_ALL_CLOSED ||
+                state == MoonBaseAirlockState.FULL_INTERNAL_OPEN ||
+                state == MoonBaseAirlockState.FULL_INTERNAL_CLOSED;
 
-            return state == MoonBaseAirlockState.FULL_ALL_CLOSED ||
-                    state == MoonBaseAirlockState.FULL_INTERNAL_OPEN ||
-                    state == MoonBaseAirlockState.FULL_INTERNAL_CLOSED;
-        } finally {
-            stateLock.readLock().unlock();
-        }
     }
+
     public int getId() {
         return id;
     }

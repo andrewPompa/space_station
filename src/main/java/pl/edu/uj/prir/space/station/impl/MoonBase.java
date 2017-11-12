@@ -60,6 +60,11 @@ public class MoonBase implements MoonBaseInterface, Observer {
                         cargoOrder.getSize());
             } else {
                 final MoonBaseAirlock moonBaseAirlock = moonBaseAirlockOptional.get();
+                if (moonBaseAirlock.isTransferringSmallerCargoThanAirlockSize() &&
+                    moonBaseAirlock.canRejectSmallerCargoThanAirlockSize()) {
+                    final CargoOrder rejectedSmallerCargo = moonBaseAirlock.rejectSmallerCargo();
+                    cargoOrderQueue.add(rejectedSmallerCargo);
+                }
                 logger.log(Level.INFO,
                         "Transferring, cargo({0}) by airlock(id: {1}, size: {2})",
                         new Object[]{cargoOrder.getSize(), moonBaseAirlock.getId(), moonBaseAirlock.getSize()});
