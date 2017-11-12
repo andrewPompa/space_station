@@ -3,9 +3,7 @@ package pl.edu.uj.prir.space.station.transfer.chain;
 import pl.edu.uj.prir.space.station.MoonBaseAirlock;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
-import java.util.List;
 
 /**
  * Copyright: Format C
@@ -13,14 +11,12 @@ import java.util.List;
  * @author michal jazowski on 11.11.17.
  */
 public class Chain {
-    private Deque<AirlockCommand> commandList;
-    private int commandCounter;
+    private Deque<AirlockCommand> commandDeque;
     private final MoonBaseAirlock moonBaseAirlock;
 
     public Chain(MoonBaseAirlock moonBaseAirlock) {
         this.moonBaseAirlock = moonBaseAirlock;
-        commandCounter = 0;
-        commandList = new ArrayDeque<>();
+        commandDeque = new ArrayDeque<>();
     }
 
     public static Chain begin(MoonBaseAirlock moonBaseAirlock) {
@@ -28,21 +24,20 @@ public class Chain {
     }
 
     public Chain first(AirlockCommand command) {
-        commandList.addFirst(command);
+        commandDeque.addFirst(command);
         return this;
     }
 
     public Chain next(AirlockCommand command) {
-        commandList.add(command);
+        commandDeque.add(command);
         return this;
     }
 
     public boolean execute() {
-        if (commandCounter == commandList.size()) {
+        if (commandDeque.isEmpty()) {
             return false;
         }
-        commandList.peek().execute(moonBaseAirlock);
-        ++commandCounter;
+        commandDeque.poll().execute(moonBaseAirlock);
         return true;
     }
 }

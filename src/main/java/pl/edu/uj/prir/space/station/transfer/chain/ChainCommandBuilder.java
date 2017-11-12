@@ -18,8 +18,8 @@ public final class ChainCommandBuilder {
                 .next(ChainCommandBuilder.buildInsertCargoCommand())
                 .next(ChainCommandBuilder.buildInternalDoorsCloseCommand())
                 .next(ChainCommandBuilder.buildExternalDoorsOpenCommand())
-                .next(ChainCommandBuilder.buildExternalDoorsCloseCommand())
-                .next(ChainCommandBuilder.buildEjectCargoCommand());
+               .next(ChainCommandBuilder.buildEjectCargoCommand())
+               ;
     }
     public static Chain buildMoveCargoInsideChain (MoonBaseAirlock moonBaseAirlock) {
         return Chain.begin(moonBaseAirlock)
@@ -27,7 +27,6 @@ public final class ChainCommandBuilder {
                 .next(ChainCommandBuilder.buildInsertCargoCommand())
                 .next(ChainCommandBuilder.buildExternalDoorsCloseCommand())
                 .next(ChainCommandBuilder.buildInternalDoorsOpenCommand())
-                .next(ChainCommandBuilder.buildInternalDoorsCloseCommand())
                 .next(ChainCommandBuilder.buildEjectCargoCommand());
     }
 
