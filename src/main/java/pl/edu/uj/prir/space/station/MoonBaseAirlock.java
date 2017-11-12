@@ -46,7 +46,7 @@ public class MoonBaseAirlock extends Observable {
 //        teraz mogę miec ładunek który ma taki sam rozmiar jak śluza
 
 //        jeżeli mam już ładunek w śluzie o takim samym rozmiarze to nie chcę kolejnego
-        if (cargoOrder.getSize() == airlock.getSize()) {
+        if (cargoOrder != null && cargoOrder.getSize() == airlock.getSize()) {
             return false;
         }
 //        ładunku w śluzie nie ma lub jest miniejszy niż rozmiar śluzy
@@ -54,9 +54,11 @@ public class MoonBaseAirlock extends Observable {
 //        jeżeli ładunku jeszcze nie ma śluzie to teoretycznie mogę go obsłużyć
         return canRejectSmallerCargoThanAirlockSize();
     }
+
     public boolean isTransferringSmallerCargoThanAirlockSize() {
-       return cargoOrder.getSize() < airlock.getSize();
+        return cargoOrder != null && cargoOrder.getSize() < airlock.getSize();
     }
+
     public boolean canRejectSmallerCargoThanAirlockSize() {
         stateLock.readLock().lock();
         try {
@@ -81,6 +83,7 @@ public class MoonBaseAirlock extends Observable {
     public void transferCargo(CargoOrder cargoOrder) {
         chain = prepareCargoTransferChain(cargoOrder);
         this.cargoOrder = cargoOrder;
+        chain.execute();
     }
 
     public void insertCargo() {
@@ -187,7 +190,21 @@ public class MoonBaseAirlock extends Observable {
 
     }
 
+    private MoonBaseAirlockState getState() {
+        stateLock.readLock().lock();
+        try {
+            return state;
+        } finally {
+            stateLock.readLock().unlock();
+        }
+    }
+
     public int getId() {
         return id;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("MoonBaseAirlock[id: %d, size: %d state: %s]", getId(), getSize(), getState());
     }
 }
