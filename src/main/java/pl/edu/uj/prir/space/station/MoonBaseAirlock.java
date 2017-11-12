@@ -2,7 +2,6 @@ package pl.edu.uj.prir.space.station;
 
 import pl.edu.uj.prir.space.station.transfer.chain.Chain;
 import pl.edu.uj.prir.space.station.transfer.chain.ChainCommandBuilder;
-import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.Observable;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -69,7 +68,7 @@ public class MoonBaseAirlock extends Observable {
 
     public CargoOrder rejectSmallerCargo() {
         if (cargoOrder == null) {
-            throw new InvalidStateException("No cargo to transfer!");
+            throw new IllegalStateException("No cargo to transfer!");
         }
         logger.log(Level.INFO, "Cargo rejected from transferring: {0}", cargoOrder.toString());
 
