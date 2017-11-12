@@ -82,13 +82,13 @@ public class MoonBase implements MoonBaseInterface, Observer {
         int valueForAirlock1 = airlock1.calculateSortPositionByOpenDoorAndCargoDirection(cargo);
         int valueForAirlock2 = airlock2.calculateSortPositionByOpenDoorAndCargoDirection(cargo);
         if (valueForAirlock1 < 0) {
-            return 9;
-        }
-        if (valueForAirlock2 < 0) {
             return -9;
         }
-        if (valueForAirlock1 == 0) {
+        if (valueForAirlock2 < 0) {
             return 9;
+        }
+        if (valueForAirlock1 == 0) {
+            return -9;
         }
         return 0;
     }
