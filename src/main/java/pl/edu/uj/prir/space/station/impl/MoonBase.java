@@ -33,10 +33,10 @@ public class MoonBase implements MoonBaseInterface, Observer {
             logger.log(Level.INFO, "Moon Base cannot handle cargo of size: {0}", cargo.getSize());
             return;
         }
+        final CargoOrder cargoOrder = new CargoOrder(cargo, direction);
         logger.log(Level.INFO,
                 "Inserting cargo({0}) to queue, already waiting {1} elements",
-                new Object[]{cargo.getSize(), cargoOrderQueue.size()});
-        final CargoOrder cargoOrder = new CargoOrder(cargo, direction);
+                new Object[]{cargo.toString(), cargoOrderQueue.size()});
         cargoOrderQueue.add(cargoOrder);
         serveCargoOrders();
     }
@@ -45,8 +45,8 @@ public class MoonBase implements MoonBaseInterface, Observer {
     public void update(Observable o, Object arg) {
         MoonBaseAirlock moonBaseAirlock = (MoonBaseAirlock) o;
         logger.log(Level.INFO,
-                "moonBaseAirLock({0}) is empty checking to register cargo",
-                moonBaseAirlock.getId());
+                "moonBaseAirLock({0}) finished processing",
+                moonBaseAirlock.toString());
         serveCargoOrders();
 
     }
@@ -66,8 +66,8 @@ public class MoonBase implements MoonBaseInterface, Observer {
                     cargoOrderQueue.add(rejectedSmallerCargo);
                 }
                 logger.log(Level.INFO,
-                        "Transferring, cargo({0}) by airlock(id: {1}, size: {2})",
-                        new Object[]{cargoOrder.getSize(), moonBaseAirlock.getId(), moonBaseAirlock.getSize()});
+                        "Transferring, cargo({0}) by airlock: {1}",
+                        new Object[]{cargoOrder.toString(), moonBaseAirlock.toString()});
                 moonBaseAirlock.transferCargo(cargoOrder);
                 cargoOrderQueue.remove(cargoOrder);
             }

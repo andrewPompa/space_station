@@ -1,5 +1,7 @@
 package pl.edu.uj.prir.space.station;
 
+import pl.edu.uj.prir.space.station.airlock.state.MoonBaseAirlockCargoState;
+import pl.edu.uj.prir.space.station.airlock.state.MoonBaseAirlockDoorState;
 import pl.edu.uj.prir.space.station.transfer.chain.Chain;
 import pl.edu.uj.prir.space.station.transfer.chain.ChainCommandBuilder;
 
@@ -18,6 +20,9 @@ public class MoonBaseAirlock extends Observable {
     private final int id;
     private final AirlockInterface airlock;
     private MoonBaseAirlockState state;
+    private MoonBaseAirlockDoorState internalDoorState;
+    private MoonBaseAirlockDoorState externalDoorState;
+    private MoonBaseAirlockCargoState cargoState;
     private ReentrantReadWriteLock stateLock;
     private Chain chain;
     private CargoOrder cargoOrder;
@@ -26,7 +31,11 @@ public class MoonBaseAirlock extends Observable {
         this.id = id;
         this.airlock = airlock;
         listenForAirLockChanges(airlock);
+        internalDoorState = MoonBaseAirlockDoorState.CLOSED;
+        externalDoorState = MoonBaseAirlockDoorState.CLOSED;
+        cargoState = MoonBaseAirlockCargoState.OUTSIDE;
         stateLock = new ReentrantReadWriteLock();
+        setState(internalDoorState, externalDoorState, cargoState);
     }
 
     public int getSize() {
@@ -117,9 +126,9 @@ public class MoonBaseAirlock extends Observable {
                 return 0;
             }
             if (cargo.fromInside()) {
-                return (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN) ? -1 : 1;
+                return (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN_EXTERNAL_CLOSED) ? -1 : 1;
             }
-            return (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN) ? 1 : -1;
+            return (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN_EXTERNAL_CLOSED) ? 1 : -1;
         } finally {
             stateLock.readLock().unlock();
         }
@@ -132,9 +141,9 @@ public class MoonBaseAirlock extends Observable {
 
         stateLock.readLock().lock();
         try {
-            if (state == MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED && cargoOrder.fromInside()) {
+            if (state == MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED_EXTERNAL_OPEN && cargoOrder.fromInside()) {
                 transferChain.first(ChainCommandBuilder.buildExternalDoorsCloseCommand());
-            } else if (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN && !cargoOrder.fromInside()) {
+            } else if (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN_EXTERNAL_CLOSED && !cargoOrder.fromInside()) {
                 transferChain.first(ChainCommandBuilder.buildInternalDoorsCloseCommand());
             }
         } finally {
@@ -145,12 +154,16 @@ public class MoonBaseAirlock extends Observable {
     }
 
     private void makeTransferCargoStep(AirlockInterface.Event event) {
-        setState(event);
+        setInternalDoorState(event);
+        setExternalDoorState(event);
+        setCargoState(event);
+        setState(internalDoorState, externalDoorState, cargoState);
         final boolean isChainInProgress = chain.execute();
         if (!isChainInProgress) {
             logger.info("Processing finished");
             chain = null;
             cargoOrder = null;
+            setChanged();
             notifyObservers();
         }
     }
@@ -159,34 +172,53 @@ public class MoonBaseAirlock extends Observable {
         airlock.setEventsListener(this::makeTransferCargoStep);
     }
 
-    private void setState(AirlockInterface.Event event) {
+    private void setInternalDoorState(AirlockInterface.Event event) {
+        if (event == AirlockInterface.Event.INTERNAL_AIRTIGHT_DOORS_OPENED) {
+            internalDoorState = MoonBaseAirlockDoorState.OPEN;
+        } else if (event == AirlockInterface.Event.INTERNAL_AIRTIGHT_DOORS_CLOSED) {
+            internalDoorState = MoonBaseAirlockDoorState.CLOSED;
+        }
+    }
+    private void setExternalDoorState(AirlockInterface.Event event) {
+        if (event == AirlockInterface.Event.EXTERNAL_AIRTIGHT_DOORS_OPENED) {
+            externalDoorState = MoonBaseAirlockDoorState.OPEN;
+        } else if (event == AirlockInterface.Event.EXTERNAL_AIRTIGHT_DOORS_CLOSED) {
+            externalDoorState = MoonBaseAirlockDoorState.CLOSED;
+        }
+    }
+    private void setCargoState(AirlockInterface.Event event) {
+        if (event == AirlockInterface.Event.CARGO_INSIDE) {
+            cargoState = MoonBaseAirlockCargoState.INSIDE;
+        } else if (event == AirlockInterface.Event.AIRLOCK_EMPTY) {
+            cargoState = MoonBaseAirlockCargoState.OUTSIDE;
+        }
+    }
+    private void setState(MoonBaseAirlockDoorState internalDoorState, MoonBaseAirlockDoorState externalDoorState, MoonBaseAirlockCargoState cargoState) {
         stateLock.writeLock().lock();
         try {
-            if (event == AirlockInterface.Event.INTERNAL_AIRTIGHT_DOORS_CLOSED) {
-                state = (cargoOrder == null) ?
-                        MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED :
-                        MoonBaseAirlockState.FULL_INTERNAL_CLOSED;
-                return;
+            if (internalDoorState == MoonBaseAirlockDoorState.OPEN) {
+                state = (cargoState == MoonBaseAirlockCargoState.OUTSIDE) ?
+                        MoonBaseAirlockState.EMPTY_INTERNAL_OPEN_EXTERNAL_CLOSED :
+                        MoonBaseAirlockState.FULL_INTERNAL_OPEN_EXTERNAL_CLOSED;
+            } else if (externalDoorState == MoonBaseAirlockDoorState.OPEN) {
+                state = (cargoState == MoonBaseAirlockCargoState.OUTSIDE) ?
+                        MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED_EXTERNAL_OPEN :
+                        MoonBaseAirlockState.FULL_INTERNAL_CLOSED_EXTERNAL_OPEN;
+            } else {
+                state = (cargoState == MoonBaseAirlockCargoState.OUTSIDE) ?
+                        MoonBaseAirlockState.EMPTY_ALL_CLOSED :
+                        MoonBaseAirlockState.FULL_ALL_CLOSED;
             }
-            if (event == AirlockInterface.Event.INTERNAL_AIRTIGHT_DOORS_OPENED) {
-                state = (cargoOrder == null) ?
-                        MoonBaseAirlockState.EMPTY_INTERNAL_OPEN :
-                        MoonBaseAirlockState.FULL_INTERNAL_OPEN;
-                return;
-            }
-            state = (cargoOrder == null) ?
-                    MoonBaseAirlockState.EMPTY_ALL_CLOSED :
-                    MoonBaseAirlockState.FULL_ALL_CLOSED;
-
         } finally {
             stateLock.writeLock().unlock();
         }
     }
 
+
     private boolean isCargoInside() {
         return state == MoonBaseAirlockState.FULL_ALL_CLOSED ||
-                state == MoonBaseAirlockState.FULL_INTERNAL_OPEN ||
-                state == MoonBaseAirlockState.FULL_INTERNAL_CLOSED;
+                state == MoonBaseAirlockState.FULL_INTERNAL_OPEN_EXTERNAL_CLOSED ||
+                state == MoonBaseAirlockState.FULL_INTERNAL_CLOSED_EXTERNAL_OPEN;
 
     }
 
