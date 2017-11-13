@@ -77,7 +77,7 @@ public class MoonBaseAirlock extends Observable {
         }
     }
 
-    public CargoOrder rejectSmallerCargo() {
+    public CargoOrder rejectSmallerCargoAndTransferNew(CargoOrder newCargoOrder) {
         if (cargoOrder == null) {
             throw new IllegalStateException("No cargo to transfer!");
         }
@@ -85,7 +85,7 @@ public class MoonBaseAirlock extends Observable {
 
         final CargoOrder rejectedOrder = new CargoOrder(cargoOrder);
         chain = null;
-        cargoOrder = null;
+        cargoOrder = newCargoOrder;
         return rejectedOrder;
     }
 

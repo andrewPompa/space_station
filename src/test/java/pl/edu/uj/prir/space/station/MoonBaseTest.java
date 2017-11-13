@@ -104,16 +104,18 @@ public class MoonBaseTest {
             CargoInterface cargo = new Cargo(2, Direction.INSIDE);
             moonBase.cargoTransfer(cargo, cargo.getDirection());
         });
-        sleep(17000L);
+        sleep(18500L);
     }
 //    todo: test nie przechodzi
 
     @Test
     public void moonBaseTestSmallerCargoReject() throws InterruptedException {
+        moonBase = new MoonBase();
+        final ArrayList<AirlockInterface> airlockList = new ArrayList<>();
+        airlockList.add(new Airlock(3));
+        moonBase.setAirlocksConfiguration(airlockList);
+
         CargoInterface cargo = new Cargo(2, Direction.OUTSIDE);
-        moonBase.cargoTransfer(cargo, cargo.getDirection());
-        sleep(250L);
-        cargo = new Cargo(2, Direction.OUTSIDE);
         moonBase.cargoTransfer(cargo, cargo.getDirection());
         sleep(250L);
         cargo = new Cargo(3, Direction.OUTSIDE);
