@@ -15,8 +15,8 @@ public abstract class AirlockCommand {
 
     protected void logExecutionCommand(MoonBaseAirlock moonBaseAirlock, String command) {
         logger.log(Level.INFO,
-                "executing {0} command for {1}",
-                new Object[]{command, moonBaseAirlock.toString()});
+                "executing {0} command for airlock[id: {1}]",
+                new Object[]{command, moonBaseAirlock.getId()});
     }
     protected abstract void execute(MoonBaseAirlock moonBaseAirlock);
 }
