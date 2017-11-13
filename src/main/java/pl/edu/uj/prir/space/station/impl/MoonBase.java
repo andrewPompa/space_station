@@ -13,10 +13,10 @@ import java.util.logging.Logger;
  * @author michal jazowski on 10.11.17.
  */
 public class MoonBase implements MoonBaseInterface, Observer {
-    private final Logger logger = Logger.getLogger( MoonBase.class.getName() );
+    private final Logger logger = Logger.getLogger(MoonBase.class.getName());
     private int moonBaseAirlockCounter;
     private final List<MoonBaseAirlock> moonBaseAirlockList = new ArrayList<>();
-    private final Queue<CargoOrder> cargoOrderQueue = new ConcurrentLinkedDeque<>();
+    private Queue<CargoOrder> cargoOrderQueue = new ConcurrentLinkedDeque<>();
 
     public MoonBase() {
         moonBaseAirlockCounter = 0;
@@ -52,26 +52,31 @@ public class MoonBase implements MoonBaseInterface, Observer {
     }
 
     private void serveCargoOrders() {
-        cargoOrderQueue.forEach(cargoOrder -> {
+        final ConcurrentLinkedDeque<CargoOrder> newCargoOrderQueue = new ConcurrentLinkedDeque<>();
+        while (!cargoOrderQueue.isEmpty()) {
+            final CargoOrder cargoOrder = cargoOrderQueue.poll();
             final Optional<MoonBaseAirlock> moonBaseAirlockOptional = getMoonBaseAirLockToTransferCargo(cargoOrder);
             if (!moonBaseAirlockOptional.isPresent()) {
                 logger.log(Level.INFO,
                         "All airlocks busy, cargo({0}) waiting",
-                        cargoOrder.getSize());
-            } else {
-                final MoonBaseAirlock moonBaseAirlock = moonBaseAirlockOptional.get();
-                if (moonBaseAirlock.isTransferringSmallerCargoThanAirlockSize() &&
+                        cargoOrder.toString());
+                newCargoOrderQueue.add(cargoOrder);
+                continue;
+            }
+            final MoonBaseAirlock moonBaseAirlock = moonBaseAirlockOptional.get();
+            if (moonBaseAirlock.isTransferringSmallerCargoThanAirlockSize() &&
                     moonBaseAirlock.canRejectSmallerCargoThanAirlockSize()) {
-                    final CargoOrder rejectedSmallerCargo = moonBaseAirlock.rejectSmallerCargo();
-                    cargoOrderQueue.add(rejectedSmallerCargo);
-                }
+                final CargoOrder rejectedSmallerCargo = moonBaseAirlock.rejectSmallerCargoAndTransferNew(cargoOrder);
+                cargoOrderQueue.add(rejectedSmallerCargo);
+            } else {
                 logger.log(Level.INFO,
                         "Transferring, cargo({0}) by airlock: {1}",
                         new Object[]{cargoOrder.toString(), moonBaseAirlock.toString()});
                 moonBaseAirlock.transferCargo(cargoOrder);
-                cargoOrderQueue.remove(cargoOrder);
             }
-        });
+
+        }
+        cargoOrderQueue = newCargoOrderQueue;
     }
 
     private int findBestMoonBaseAirlockForCargoOrder(MoonBaseAirlock airlock1, MoonBaseAirlock airlock2, CargoOrder cargo) {
