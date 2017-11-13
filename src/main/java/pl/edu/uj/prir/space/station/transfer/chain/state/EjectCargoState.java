@@ -12,7 +12,7 @@ public class EjectCargoState extends MoonBaseAirlockState {
         super(stateBeforeExecution);
     }
     @Override
-    protected void execute(MoonBaseAirlock moonBaseAirlock) {
+    public void execute(MoonBaseAirlock moonBaseAirlock) {
         logExecution(moonBaseAirlock, "ejecting cargo");
         moonBaseAirlock.ejectCargo();
     }

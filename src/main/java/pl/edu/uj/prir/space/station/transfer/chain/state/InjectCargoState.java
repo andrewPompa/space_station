@@ -13,7 +13,7 @@ public class InjectCargoState extends MoonBaseAirlockState {
     }
 
     @Override
-    protected void execute(MoonBaseAirlock moonBaseAirlock) {
+    public void execute(MoonBaseAirlock moonBaseAirlock) {
         logExecution(moonBaseAirlock, "injecting cargo");
         moonBaseAirlock.insertCargo();
     }

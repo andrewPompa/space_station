@@ -13,9 +13,9 @@ public class InternalDoorsCloseState extends MoonBaseAirlockState {
     }
 
     @Override
-    protected void execute(MoonBaseAirlock moonBaseAirlock) {
+    public void execute(MoonBaseAirlock moonBaseAirlock) {
         logExecution(moonBaseAirlock, "internal close");
-        moonBaseAirlock.openExternalDoors();
+        moonBaseAirlock.closeInternalDoors();
     }
 
     @Override
