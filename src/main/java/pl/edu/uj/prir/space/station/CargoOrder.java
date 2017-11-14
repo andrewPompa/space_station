@@ -1,19 +1,23 @@
 package pl.edu.uj.prir.space.station;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Copyright: Format C
  *
  * @author michal jazowski on 11.11.17.
  */
 public class CargoOrder {
-    private static int counter = 0;
+    private static AtomicInteger counter = new AtomicInteger();
     private final CargoInterface cargo;
+    private final int id;
     private final Direction direction;
 
     public CargoOrder(CargoInterface cargo, Direction direction) {
         this.cargo = cargo;
         this.direction = direction;
-        ++counter;
+        id = counter.incrementAndGet();
+
     }
 
     public CargoOrder(CargoOrder cargoOrder) {
@@ -24,7 +28,7 @@ public class CargoOrder {
     @Override
     public String toString() {
         return String.format("Cargo[id: %d, size: %d, direction: %s]",
-                counter,
+                id,
                 getSize(),
                 cargo.getDirection());
     }

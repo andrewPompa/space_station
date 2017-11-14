@@ -1,7 +1,8 @@
 package pl.edu.uj.prir.space.station;
 
-import pl.edu.uj.prir.space.station.transfer.chain.Chain;
-import pl.edu.uj.prir.space.station.transfer.chain.ChainCommandBuilder;
+import pl.edu.uj.prir.space.station.transfer.chain.CargoTransferChain;
+import pl.edu.uj.prir.space.station.transfer.chain.CargoTransferChainBuilder;
+import pl.edu.uj.prir.space.station.transfer.chain.state.MoonBaseAirlockState;
 
 import java.util.Observable;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -17,16 +18,17 @@ public class MoonBaseAirlock extends Observable {
     private final Logger logger = Logger.getLogger(MoonBaseAirlock.class.getName());
     private final int id;
     private final AirlockInterface airlock;
-    private MoonBaseAirlockState state;
-    private ReentrantReadWriteLock stateLock;
-    private Chain chain;
+    private CargoTransferChain cargoTransferChain;
     private CargoOrder cargoOrder;
+    private MoonBaseAirlockState currentState;
+    private final ReentrantReadWriteLock stateLock;
 
     public MoonBaseAirlock(int id, AirlockInterface airlock) {
         this.id = id;
         this.airlock = airlock;
+        this.stateLock = new ReentrantReadWriteLock();
+        cargoTransferChain = CargoTransferChainBuilder.buildStartingCargoTransferChain(this);
         listenForAirLockChanges(airlock);
-        stateLock = new ReentrantReadWriteLock();
     }
 
     public int getSize() {
@@ -46,7 +48,7 @@ public class MoonBaseAirlock extends Observable {
 //        teraz mogę miec ładunek który ma taki sam rozmiar jak śluza
 
 //        jeżeli mam już ładunek w śluzie o takim samym rozmiarze to nie chcę kolejnego
-        if (cargoOrder.getSize() == airlock.getSize()) {
+        if (cargoOrder != null && cargoOrder.getSize() == airlock.getSize()) {
             return false;
         }
 //        ładunku w śluzie nie ma lub jest miniejszy niż rozmiar śluzy
@@ -54,9 +56,11 @@ public class MoonBaseAirlock extends Observable {
 //        jeżeli ładunku jeszcze nie ma śluzie to teoretycznie mogę go obsłużyć
         return canRejectSmallerCargoThanAirlockSize();
     }
+
     public boolean isTransferringSmallerCargoThanAirlockSize() {
-       return cargoOrder.getSize() < airlock.getSize();
+        return cargoOrder != null && cargoOrder.getSize() < airlock.getSize();
     }
+
     public boolean canRejectSmallerCargoThanAirlockSize() {
         stateLock.readLock().lock();
         try {
@@ -66,21 +70,41 @@ public class MoonBaseAirlock extends Observable {
         }
     }
 
-    public CargoOrder rejectSmallerCargo() {
+    public CargoOrder rejectSmallerCargoAndTransferNew(CargoOrder newCargoOrder) {
         if (cargoOrder == null) {
             throw new IllegalStateException("No cargo to transfer!");
         }
         logger.log(Level.INFO, "Cargo rejected from transferring: {0}", cargoOrder.toString());
 
         final CargoOrder rejectedOrder = new CargoOrder(cargoOrder);
-        chain = null;
-        cargoOrder = null;
+        stateLock.readLock().lock();
+        cargoOrder = newCargoOrder;
+        try {
+            cargoTransferChain = CargoTransferChainBuilder.buildCargoChain(
+                    this,
+                    cargoOrder,
+                    cargoTransferChain);
+        } finally {
+            stateLock.readLock().unlock();
+        }
+        logger.log(Level.INFO,
+                "Transferring, cargo({0}) by airlock: {1}",
+                new Object[]{cargoOrder.toString(), toString()});
         return rejectedOrder;
     }
 
     public void transferCargo(CargoOrder cargoOrder) {
-        chain = prepareCargoTransferChain(cargoOrder);
+        stateLock.readLock().lock();
+        try {
+            cargoTransferChain = CargoTransferChainBuilder.buildCargoChain(
+                    this,
+                    cargoOrder,
+                    cargoTransferChain);
+        } finally {
+            stateLock.readLock().unlock();
+        }
         this.cargoOrder = cargoOrder;
+        cargoTransferChain.execute();
     }
 
     public void insertCargo() {
@@ -110,44 +134,25 @@ public class MoonBaseAirlock extends Observable {
     public int calculateSortPositionByOpenDoorAndCargoDirection(CargoOrder cargo) {
         stateLock.readLock().lock();
         try {
-            if (state == MoonBaseAirlockState.EMPTY_ALL_CLOSED) {
+            if (!cargoTransferChain.getCurrent().isEmptyWithAllDoorsClosed()) {
                 return 0;
             }
             if (cargo.fromInside()) {
-                return (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN) ? -1 : 1;
+                return (cargoTransferChain.getCurrent().isEmptyWithOpenInternalAndClosedExternalDoors()) ? -1 : 1;
             }
-            return (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN) ? 1 : -1;
+            return (cargoTransferChain.getCurrent().isEmptyWithClosedInternalAndOpenExternalDoors()) ? -1 : 1;
         } finally {
             stateLock.readLock().unlock();
         }
-    }
-
-    private Chain prepareCargoTransferChain(CargoOrder cargoOrder) {
-        final Chain transferChain = (cargoOrder.fromInside()) ?
-                ChainCommandBuilder.buildMoveCargoOutsideChain(this) :
-                ChainCommandBuilder.buildMoveCargoInsideChain(this);
-
-        stateLock.readLock().lock();
-        try {
-            if (state == MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED && cargoOrder.fromInside()) {
-                transferChain.first(ChainCommandBuilder.buildExternalDoorsCloseCommand());
-            } else if (state == MoonBaseAirlockState.EMPTY_INTERNAL_OPEN && !cargoOrder.fromInside()) {
-                transferChain.first(ChainCommandBuilder.buildInternalDoorsCloseCommand());
-            }
-        } finally {
-            stateLock.readLock().unlock();
-        }
-
-        return transferChain;
     }
 
     private void makeTransferCargoStep(AirlockInterface.Event event) {
-        setState(event);
-        final boolean isChainInProgress = chain.execute();
+
+        final boolean isChainInProgress = cargoTransferChain.execute();
         if (!isChainInProgress) {
             logger.info("Processing finished");
-            chain = null;
             cargoOrder = null;
+            setChanged();
             notifyObservers();
         }
     }
@@ -156,38 +161,26 @@ public class MoonBaseAirlock extends Observable {
         airlock.setEventsListener(this::makeTransferCargoStep);
     }
 
-    private void setState(AirlockInterface.Event event) {
-        stateLock.writeLock().lock();
-        try {
-            if (event == AirlockInterface.Event.INTERNAL_AIRTIGHT_DOORS_CLOSED) {
-                state = (cargoOrder == null) ?
-                        MoonBaseAirlockState.EMPTY_INTERNAL_CLOSED :
-                        MoonBaseAirlockState.FULL_INTERNAL_CLOSED;
-                return;
-            }
-            if (event == AirlockInterface.Event.INTERNAL_AIRTIGHT_DOORS_OPENED) {
-                state = (cargoOrder == null) ?
-                        MoonBaseAirlockState.EMPTY_INTERNAL_OPEN :
-                        MoonBaseAirlockState.FULL_INTERNAL_OPEN;
-                return;
-            }
-            state = (cargoOrder == null) ?
-                    MoonBaseAirlockState.EMPTY_ALL_CLOSED :
-                    MoonBaseAirlockState.FULL_ALL_CLOSED;
+    private boolean isCargoInside() {
+        return cargoTransferChain.getCurrent().isCargoInside();
 
-        } finally {
-            stateLock.writeLock().unlock();
-        }
     }
 
-    private boolean isCargoInside() {
-        return state == MoonBaseAirlockState.FULL_ALL_CLOSED ||
-                state == MoonBaseAirlockState.FULL_INTERNAL_OPEN ||
-                state == MoonBaseAirlockState.FULL_INTERNAL_CLOSED;
-
+    private String getStateDescription() {
+        stateLock.readLock().lock();
+        try {
+            return cargoTransferChain.getCurrent().getStateDescription();
+        } finally {
+            stateLock.readLock().unlock();
+        }
     }
 
     public int getId() {
         return id;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("MoonBaseAirlock[id: %d, size: %d state: %s]", getId(), getSize(), getStateDescription());
     }
 }
