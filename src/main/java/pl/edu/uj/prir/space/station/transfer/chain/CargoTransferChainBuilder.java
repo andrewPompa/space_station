@@ -13,8 +13,8 @@ public final class CargoTransferChainBuilder {
     private CargoTransferChainBuilder() {
     }
 
-    public static CargoTransferChain buildEmptyCargoTransferChain(MoonBaseAirlock moonBaseAirlock) {
-        return CargoTransferChain.beginWithEmptyState(moonBaseAirlock).startingWithClosedAllDoorsState();
+    public static CargoTransferChain buildStartingCargoTransferChain(MoonBaseAirlock moonBaseAirlock) {
+        return CargoTransferChain.begin(moonBaseAirlock).startingWithClosedAllDoorsState();
     }
 
     public static CargoTransferChain buildMoveCargoOutsideChain(MoonBaseAirlock moonBaseAirlock, MoonBaseAirlockState currentState) {

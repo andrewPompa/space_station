@@ -20,29 +20,10 @@ public class CargoTransferChain {
         this.moonBaseAirlock = moonBaseAirlock;
         commandDeque = new ArrayDeque<>();
     }
-    public CargoTransferChain(MoonBaseAirlock moonBaseAirlock, MoonBaseAirlockState firstState) {
-        this.moonBaseAirlock = moonBaseAirlock;
-        commandDeque = new ArrayDeque<>();
-        commandDeque.addFirst(firstState);
-    }
     public static CargoTransferChain begin(MoonBaseAirlock moonBaseAirlock) {
         return new CargoTransferChain(moonBaseAirlock);
     }
-    public static CargoTransferChain begin(MoonBaseAirlock moonBaseAirlock, MoonBaseAirlockState firstState) {
-        return new CargoTransferChain(moonBaseAirlock, firstState);
-    }
-    public static CargoTransferChain beginWithEmptyState(MoonBaseAirlock moonBaseAirlock) {
-        return new CargoTransferChain(moonBaseAirlock, new EmptyAirlockState());
-    }
-    public CargoTransferChain first(MoonBaseAirlockState state) {
-        commandDeque.addFirst(state);
-        return this;
-    }
-    public CargoTransferChain next(MoonBaseAirlockState state) {
-        commandDeque.add(state);
-        currentState = state;
-        return this;
-    }
+
     public CargoTransferChain startingWithClosedAllDoorsState() {
         commandDeque.add(new ClosedAllDoorsStartingState());
         return this;
