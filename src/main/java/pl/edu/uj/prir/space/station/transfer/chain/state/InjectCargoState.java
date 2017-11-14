@@ -14,8 +14,13 @@ public class InjectCargoState extends MoonBaseAirlockState {
 
     @Override
     public void execute(MoonBaseAirlock moonBaseAirlock) {
-        logExecution(moonBaseAirlock, "injecting cargo");
+        logExecution(moonBaseAirlock, getStateDescription());
         moonBaseAirlock.insertCargo();
+    }
+
+    @Override
+    public String getStateDescription() {
+        return "injecting cargo";
     }
 
     @Override

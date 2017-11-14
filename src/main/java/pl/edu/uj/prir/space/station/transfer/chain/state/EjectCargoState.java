@@ -13,8 +13,13 @@ public class EjectCargoState extends MoonBaseAirlockState {
     }
     @Override
     public void execute(MoonBaseAirlock moonBaseAirlock) {
-        logExecution(moonBaseAirlock, "ejecting cargo");
+        logExecution(moonBaseAirlock, getStateDescription());
         moonBaseAirlock.ejectCargo();
+    }
+
+    @Override
+    public String getStateDescription() {
+        return "ejecting cargo";
     }
 
     @Override

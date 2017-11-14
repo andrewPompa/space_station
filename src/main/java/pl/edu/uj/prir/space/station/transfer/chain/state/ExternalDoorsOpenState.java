@@ -14,8 +14,13 @@ public class ExternalDoorsOpenState extends MoonBaseAirlockState {
 
     @Override
     public void execute(MoonBaseAirlock moonBaseAirlock) {
-        logExecution(moonBaseAirlock, "open external");
+        logExecution(moonBaseAirlock, getStateDescription());
         moonBaseAirlock.openExternalDoors();
+    }
+
+    @Override
+    public String getStateDescription() {
+        return "open external";
     }
 
     @Override

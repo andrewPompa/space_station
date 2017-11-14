@@ -24,7 +24,7 @@ public abstract class MoonBaseAirlockState {
         this.cargoInside = setCargoInside();
     }
 
-    public MoonBaseAirlockState getStateAfterExecution(){
+    public MoonBaseAirlockState getStateAfterExecution() {
         return this;
     }
 
@@ -47,9 +47,17 @@ public abstract class MoonBaseAirlockState {
                 new Object[]{command, moonBaseAirlock.getId()});
     }
 
+    public abstract String getStateDescription();
+
     protected abstract boolean setInternalDoorsOpen();
+
     protected abstract boolean setExternalDoorsOpen();
+
     protected abstract boolean setCargoInside();
+
+    public static MoonBaseAirlockState getEmptyState() {
+        return new EmptyAirlockState();
+    }
 
     public boolean isInternalDoorsOpen() {
         return internalDoorsOpen;
@@ -70,5 +78,9 @@ public abstract class MoonBaseAirlockState {
 
     public boolean isEmptyWithClosedInternalAndOpenExternalDoors() {
         return !isInternalDoorsOpen() && !isCargoInside() && !isExternalDoorsOpen();
+    }
+
+    public boolean isStartingState() {
+        return this instanceof StartingMoonBaseAirlockState;
     }
 }

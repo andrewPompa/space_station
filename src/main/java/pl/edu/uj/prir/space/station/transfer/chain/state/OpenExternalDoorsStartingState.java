@@ -5,14 +5,14 @@ import pl.edu.uj.prir.space.station.MoonBaseAirlock;
 /**
  * Copyright: Format C
  *
- * @author michal jazowski on 13.11.17.
+ * @author michal jazowski on 14.11.17.
  */
-public class EmptyAirlockState extends MoonBaseAirlockState {
-    public EmptyAirlockState() {
-        this(null);
+public class OpenExternalDoorsStartingState extends StartingMoonBaseAirlockState {
+    public OpenExternalDoorsStartingState(MoonBaseAirlockState stateBeforeExecution) {
+        super(stateBeforeExecution);
     }
 
-    public EmptyAirlockState(MoonBaseAirlockState stateBeforeExecution) {
+    public OpenExternalDoorsStartingState() {
         super(null);
     }
 
@@ -23,7 +23,7 @@ public class EmptyAirlockState extends MoonBaseAirlockState {
 
     @Override
     public String getStateDescription() {
-        return "EMPTY AIRLOCK STATE";
+        return "EXTERNAL_OPEN";
     }
 
     @Override
@@ -33,7 +33,7 @@ public class EmptyAirlockState extends MoonBaseAirlockState {
 
     @Override
     protected boolean setExternalDoorsOpen() {
-        return false;
+        return true;
     }
 
     @Override
