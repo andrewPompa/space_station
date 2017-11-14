@@ -148,7 +148,6 @@ public class MoonBaseAirlock extends Observable {
         final boolean isChainInProgress = cargoTransferChain.execute();
         if (!isChainInProgress) {
             logger.info("Processing finished");
-            cargoTransferChain = null;
             cargoOrder = null;
             setChanged();
             notifyObservers();
@@ -164,10 +163,10 @@ public class MoonBaseAirlock extends Observable {
 
     }
 
-    private MoonBaseAirlockState getState() {
+    private String getStateDescription() {
         stateLock.readLock().lock();
         try {
-            return cargoTransferChain.getCurrent();
+            return cargoTransferChain.getCurrent().getStateDescription();
         } finally {
             stateLock.readLock().unlock();
         }
@@ -179,6 +178,6 @@ public class MoonBaseAirlock extends Observable {
 
     @Override
     public String toString() {
-        return String.format("MoonBaseAirlock[id: %d, size: %d state: %s]", getId(), getSize(), getState());
+        return String.format("MoonBaseAirlock[id: %d, size: %d state: %s]", getId(), getSize(), getStateDescription());
     }
 }

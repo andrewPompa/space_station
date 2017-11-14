@@ -14,17 +14,22 @@ public final class CargoTransferChainBuilder {
     }
 
     public static CargoTransferChain buildEmptyCargoTransferChain(MoonBaseAirlock moonBaseAirlock) {
-        return CargoTransferChain.begin(moonBaseAirlock).nextEmptyState();
+        return CargoTransferChain.beginWithEmptyState(moonBaseAirlock).startingWithClosedAllDoorsState();
     }
 
     public static CargoTransferChain buildMoveCargoOutsideChain(MoonBaseAirlock moonBaseAirlock, MoonBaseAirlockState currentState) {
         final CargoTransferChain cargoTransferChain = CargoTransferChain.begin(moonBaseAirlock);
         if (currentState.isEmptyWithAllDoorsClosed()) {
-            cargoTransferChain.nextInternalDoorsOpenState();
+            cargoTransferChain
+                    .startingWithClosedAllDoorsState()
+                    .nextInternalDoorsOpenState();
         } else if (currentState.isExternalDoorsOpen()) {
             cargoTransferChain
+                    .startingWithExternalDoorsOpenState()
                     .nextExternalDoorsCloseState()
                     .nextInternalDoorsOpenState();
+        } else {
+            cargoTransferChain.startingWithInternalDoorsOpenState();
         }
         return cargoTransferChain
                 .nextInsertCargoState()
@@ -37,11 +42,16 @@ public final class CargoTransferChainBuilder {
     public static CargoTransferChain buildMoveCargoInsideChain(MoonBaseAirlock moonBaseAirlock, MoonBaseAirlockState currentState) {
         final CargoTransferChain cargoTransferChain = CargoTransferChain.begin(moonBaseAirlock);
         if (currentState.isEmptyWithAllDoorsClosed()) {
-            cargoTransferChain.nextExternalDoorsOpenState();
+            cargoTransferChain
+                    .startingWithClosedAllDoorsState()
+                    .nextExternalDoorsOpenState();
         } else if (currentState.isInternalDoorsOpen()) {
             cargoTransferChain
+                    .startingWithInternalDoorsOpenState()
                     .nextInternalDoorsCloseState()
                     .nextExternalDoorsOpenState();
+        } else {
+            cargoTransferChain.startingWithExternalDoorsOpenState();
         }
         return cargoTransferChain
                 .nextInsertCargoState()
@@ -63,7 +73,7 @@ public final class CargoTransferChainBuilder {
     }
 
     public static CargoTransferChain buildCargoChainFromRejectedChain(MoonBaseAirlock moonBaseAirlock, CargoOrder cargoOrder, CargoTransferChain cargoTransferChain) {
-        CargoTransferChain newCargoTransferChain = CargoTransferChain.begin(moonBaseAirlock).next(cargoTransferChain.getCurrent().revert());
+        CargoTransferChain newCargoTransferChain = CargoTransferChain.begin(moonBaseAirlock, cargoTransferChain.getCurrent().revert());
         return buildCargoChain(moonBaseAirlock, cargoOrder, newCargoTransferChain);
     }
 }

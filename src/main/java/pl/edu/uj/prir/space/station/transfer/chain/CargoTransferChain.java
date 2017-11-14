@@ -13,15 +13,26 @@ import java.util.Deque;
  */
 public class CargoTransferChain {
     private Deque<MoonBaseAirlockState> commandDeque;
+    private MoonBaseAirlockState currentState;
     private final MoonBaseAirlock moonBaseAirlock;
 
     public CargoTransferChain(MoonBaseAirlock moonBaseAirlock) {
         this.moonBaseAirlock = moonBaseAirlock;
         commandDeque = new ArrayDeque<>();
     }
-
+    public CargoTransferChain(MoonBaseAirlock moonBaseAirlock, MoonBaseAirlockState firstState) {
+        this.moonBaseAirlock = moonBaseAirlock;
+        commandDeque = new ArrayDeque<>();
+        commandDeque.addFirst(firstState);
+    }
     public static CargoTransferChain begin(MoonBaseAirlock moonBaseAirlock) {
         return new CargoTransferChain(moonBaseAirlock);
+    }
+    public static CargoTransferChain begin(MoonBaseAirlock moonBaseAirlock, MoonBaseAirlockState firstState) {
+        return new CargoTransferChain(moonBaseAirlock, firstState);
+    }
+    public static CargoTransferChain beginWithEmptyState(MoonBaseAirlock moonBaseAirlock) {
+        return new CargoTransferChain(moonBaseAirlock, new EmptyAirlockState());
     }
     public CargoTransferChain first(MoonBaseAirlockState state) {
         commandDeque.addFirst(state);
@@ -29,47 +40,63 @@ public class CargoTransferChain {
     }
     public CargoTransferChain next(MoonBaseAirlockState state) {
         commandDeque.add(state);
+        currentState = state;
         return this;
     }
-    public CargoTransferChain nextEmptyState() {
-        commandDeque.add(new EmptyAirlockState());
+    public CargoTransferChain startingWithClosedAllDoorsState() {
+        commandDeque.add(new ClosedAllDoorsStartingState());
+        return this;
+    }
+    public CargoTransferChain startingWithInternalDoorsOpenState() {
+        commandDeque.add(new OpenInternalDoorsStartingState());
+        return this;
+    }
+    public CargoTransferChain startingWithExternalDoorsOpenState() {
+        commandDeque.add(new OpenExternalDoorsStartingState());
         return this;
     }
     public CargoTransferChain nextInsertCargoState() {
-        commandDeque.add(new InjectCargoState(commandDeque.peek()));
+        commandDeque.add(new InjectCargoState(commandDeque.peekLast()));
         return this;
     }
     public CargoTransferChain nextEjectCargoState() {
-        commandDeque.add(new EjectCargoState(commandDeque.peek()));
+        commandDeque.add(new EjectCargoState(commandDeque.peekLast()));
         return this;
     }
     public CargoTransferChain nextInternalDoorsOpenState() {
-        commandDeque.add(new InternalDoorsOpenState(commandDeque.peek()));
+        commandDeque.add(new InternalDoorsOpenState(commandDeque.peekLast()));
         return this;
     }
     public CargoTransferChain nextInternalDoorsCloseState() {
-        commandDeque.add(new InternalDoorsCloseState(commandDeque.peek()));
+        commandDeque.add(new InternalDoorsCloseState(commandDeque.peekLast()));
         return this;
     }
     public CargoTransferChain nextExternalDoorsOpenState() {
-        commandDeque.add(new ExternalDoorsOpenState(commandDeque.peek()));
+        commandDeque.add(new ExternalDoorsOpenState(commandDeque.peekLast()));
         return this;
     }
 
     public CargoTransferChain nextExternalDoorsCloseState() {
-        commandDeque.add(new ExternalDoorsCloseState(commandDeque.peek()));
+        commandDeque.add(new ExternalDoorsCloseState(commandDeque.peekLast()));
         return this;
     }
 
     public MoonBaseAirlockState getCurrent() {
-        return commandDeque.peek();
+        return currentState == null ? commandDeque.peek() : currentState;
     }
 
     public boolean execute() {
         if (commandDeque.isEmpty()) {
             return false;
         }
-        commandDeque.poll().execute(moonBaseAirlock);
+        currentState = commandDeque.poll();
+        if (currentState.isStartingState()) {
+            currentState = commandDeque.poll();
+            if (commandDeque.isEmpty()) {
+                return false;
+            }
+        }
+        currentState.execute(moonBaseAirlock);
         return true;
     }
 }
