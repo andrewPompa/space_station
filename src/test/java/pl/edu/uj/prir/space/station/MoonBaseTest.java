@@ -21,7 +21,6 @@ public class MoonBaseTest {
 
     @BeforeTest
     public void setAirlocksConfiguration() {
-//        todo: dokończyć testy
         moonBase = new MoonBase();
         final ArrayList<AirlockInterface> airlockList = new ArrayList<>();
         airlockList.add(new Airlock(3));
@@ -118,6 +117,20 @@ public class MoonBaseTest {
         sleep(250L);
         cargo = new Cargo(3, Direction.OUTSIDE);
         moonBase.cargoTransfer(cargo, cargo.getDirection());
-        sleep(15000L);
+        sleep(11000L);
+    }
+    @Test
+    public void moonBaseTestSmallerCargoRejectFromOutsideAndInside() throws InterruptedException {
+        moonBase = new MoonBase();
+        final ArrayList<AirlockInterface> airlockList = new ArrayList<>();
+        airlockList.add(new Airlock(3));
+        moonBase.setAirlocksConfiguration(airlockList);
+
+        CargoInterface cargo = new Cargo(2, Direction.OUTSIDE);
+        moonBase.cargoTransfer(cargo, cargo.getDirection());
+        sleep(250L);
+        cargo = new Cargo(3, Direction.INSIDE);
+        moonBase.cargoTransfer(cargo, cargo.getDirection());
+        sleep(11000L);
     }
 }

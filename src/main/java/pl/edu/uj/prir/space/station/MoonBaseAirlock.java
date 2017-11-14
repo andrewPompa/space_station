@@ -27,7 +27,7 @@ public class MoonBaseAirlock extends Observable {
         this.id = id;
         this.airlock = airlock;
         this.stateLock = new ReentrantReadWriteLock();
-        cargoTransferChain = CargoTransferChainBuilder.buildEmptyCargoTransferChain(this);
+        cargoTransferChain = CargoTransferChainBuilder.buildStartingCargoTransferChain(this);
         listenForAirLockChanges(airlock);
     }
 
@@ -78,6 +78,7 @@ public class MoonBaseAirlock extends Observable {
 
         final CargoOrder rejectedOrder = new CargoOrder(cargoOrder);
         stateLock.readLock().lock();
+        cargoOrder = newCargoOrder;
         try {
             cargoTransferChain = CargoTransferChainBuilder.buildCargoChain(
                     this,
@@ -86,7 +87,9 @@ public class MoonBaseAirlock extends Observable {
         } finally {
             stateLock.readLock().unlock();
         }
-        cargoOrder = newCargoOrder;
+        logger.log(Level.INFO,
+                "Transferring, cargo({0}) by airlock: {1}",
+                new Object[]{cargoOrder.toString(), toString()});
         return rejectedOrder;
     }
 
