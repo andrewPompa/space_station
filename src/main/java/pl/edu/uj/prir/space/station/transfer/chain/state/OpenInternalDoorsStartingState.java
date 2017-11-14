@@ -40,4 +40,9 @@ public class OpenInternalDoorsStartingState extends StartingMoonBaseAirlockState
     protected boolean setCargoInside() {
         return false;
     }
+
+    @Override
+    protected MoonBaseAirlockState getStateToRevert() {
+        return this;
+    }
 }

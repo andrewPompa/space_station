@@ -40,4 +40,9 @@ public class EmptyAirlockState extends MoonBaseAirlockState {
     protected boolean setCargoInside() {
         return false;
     }
+
+    @Override
+    protected MoonBaseAirlockState getStateToRevert() {
+        return this;
+    }
 }

@@ -39,4 +39,9 @@ public class EjectCargoState extends MoonBaseAirlockState {
         }
         return false;
     }
+
+    @Override
+    protected MoonBaseAirlockState getStateToRevert() {
+        return new InjectCargoState(this);
+    }
 }

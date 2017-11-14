@@ -32,7 +32,7 @@ public abstract class MoonBaseAirlockState {
         if (stateBeforeExecution == null) {
             throw new IllegalStateException("stateBeforeExecution is not set!");
         }
-        return stateBeforeExecution;
+        return getStateToRevert();
     }
 
     public boolean isEmptyWithAllDoorsClosed() {
@@ -54,6 +54,8 @@ public abstract class MoonBaseAirlockState {
     protected abstract boolean setExternalDoorsOpen();
 
     protected abstract boolean setCargoInside();
+
+    protected abstract MoonBaseAirlockState getStateToRevert();
 
     public static MoonBaseAirlockState getEmptyState() {
         return new EmptyAirlockState();

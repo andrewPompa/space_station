@@ -40,4 +40,9 @@ public class ExternalDoorsCloseState extends MoonBaseAirlockState {
     protected boolean setCargoInside() {
         return stateBeforeExecution.isCargoInside();
     }
+
+    @Override
+    protected MoonBaseAirlockState getStateToRevert() {
+        return new ExternalDoorsOpenState(this);
+    }
 }
