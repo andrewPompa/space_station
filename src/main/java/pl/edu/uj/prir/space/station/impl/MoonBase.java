@@ -4,6 +4,7 @@ import pl.edu.uj.prir.space.station.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,10 +17,12 @@ public class MoonBase implements MoonBaseInterface, Observer {
     private final Logger logger = Logger.getLogger(MoonBase.class.getName());
     private int moonBaseAirlockCounter;
     private final List<MoonBaseAirlock> moonBaseAirlockList = new ArrayList<>();
+    private final ReentrantReadWriteLock listLock;
     private Queue<CargoOrder> cargoOrderQueue = new ConcurrentLinkedDeque<>();
 
     public MoonBase() {
         moonBaseAirlockCounter = 0;
+        this.listLock = new ReentrantReadWriteLock();
     }
 
     @Override
@@ -103,10 +106,15 @@ public class MoonBase implements MoonBaseInterface, Observer {
     }
 
     private Optional<MoonBaseAirlock> getMoonBaseAirLockToTransferCargo(CargoOrder cargo) {
-        return moonBaseAirlockList.stream()
-                .filter(moonBaseAirlock -> moonBaseAirlock.canTakeCargo(cargo))
-                .sorted((o1, o2) -> findBestMoonBaseAirlockForCargoOrder(o1, o2, cargo))
-                .findFirst();
+        listLock.readLock().lock();
+        try {
+            return moonBaseAirlockList.stream()
+                    .filter(moonBaseAirlock -> moonBaseAirlock.canTakeCargo(cargo))
+                    .sorted((o1, o2) -> findBestMoonBaseAirlockForCargoOrder(o1, o2, cargo))
+                    .findFirst();
+        }finally {
+            listLock.readLock().unlock();
+        }
     }
 
     private boolean isCargoHasAppropriateSize(CargoInterface cargo) {
