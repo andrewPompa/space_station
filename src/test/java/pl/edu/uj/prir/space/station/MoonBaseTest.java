@@ -36,14 +36,14 @@ public class MoonBaseTest {
     public void oneCargoTransferOutsideTest() throws InterruptedException {
         CargoInterface cargo = new Cargo(2, Direction.OUTSIDE);
         moonBase.cargoTransfer(cargo, cargo.getDirection());
-        sleep(10000L);
+        sleep(5200L);
     }
 
     @Test
     public void oneCargoTransferInsideTest() throws InterruptedException {
         CargoInterface cargo = new Cargo(2, Direction.INSIDE);
         moonBase.cargoTransfer(cargo, cargo.getDirection());
-        sleep(10000L);
+        sleep(5200L);
     }
 
     @Test
