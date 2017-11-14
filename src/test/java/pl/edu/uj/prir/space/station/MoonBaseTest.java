@@ -106,8 +106,6 @@ public class MoonBaseTest {
         });
         sleep(18500L);
     }
-//    todo: test nie przechodzi
-
     @Test
     public void moonBaseTestSmallerCargoReject() throws InterruptedException {
         moonBase = new MoonBase();
@@ -120,6 +118,6 @@ public class MoonBaseTest {
         sleep(250L);
         cargo = new Cargo(3, Direction.OUTSIDE);
         moonBase.cargoTransfer(cargo, cargo.getDirection());
-        sleep(10000L);
+        sleep(15000L);
     }
 }

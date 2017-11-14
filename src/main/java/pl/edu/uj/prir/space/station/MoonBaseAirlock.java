@@ -79,7 +79,7 @@ public class MoonBaseAirlock extends Observable {
         final CargoOrder rejectedOrder = new CargoOrder(cargoOrder);
         stateLock.readLock().lock();
         try {
-            cargoTransferChain = CargoTransferChainBuilder.buildCargoChainFromRejectedChain(
+            cargoTransferChain = CargoTransferChainBuilder.buildCargoChain(
                     this,
                     cargoOrder,
                     cargoTransferChain);

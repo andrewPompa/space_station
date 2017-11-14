@@ -71,9 +71,4 @@ public final class CargoTransferChainBuilder {
                         moonBaseAirlock,
                         cargoTransferChain.getCurrent());
     }
-
-    public static CargoTransferChain buildCargoChainFromRejectedChain(MoonBaseAirlock moonBaseAirlock, CargoOrder cargoOrder, CargoTransferChain cargoTransferChain) {
-        CargoTransferChain newCargoTransferChain = CargoTransferChain.begin(moonBaseAirlock, cargoTransferChain.getCurrent().revert());
-        return buildCargoChain(moonBaseAirlock, cargoOrder, newCargoTransferChain);
-    }
 }
